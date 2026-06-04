@@ -1,0 +1,89 @@
+class:: WavesetRepeat
+summary:: Waveset repeat distortion (CDP-style) reading from a buffer
+categories:: UGens>Buffer, UGens>Distortion
+related:: Classes/GrainBuf, Classes/PlayBuf, Classes/Squiz
+
+description::
+
+A buffer-reading distortion UGen modelled on the waveset processes of the
+link::https://www.composersdesktop.com/##Composers Desktop Project:: (CDP),
+originated by Trevor Wishart.
+
+A emphasis::waveset:: is a span of the signal between zero crossings — more
+precisely, code::numCycles:: full wavecycles (each cycle = one positive lobe
+plus the following negative lobe). code::WavesetRepeat:: walks the source
+buffer, detects each successive waveset, and replays it code::repeats:: times
+before advancing to the next one. Because the source lives in a Buffer (random
+access, in RAM) rather than streaming through, the UGen can emit more samples
+than it reads — which is what lets waveset repetition stretch and roughen the
+sound, dropping its perceived pitch and adding a granular, buzzy character.
+
+note::
+The buffer must be emphasis::mono::. With code::repeats: 1:: the output is a
+faithful pass through the source. As code::repeats:: rises the sound is
+increasingly time-stretched and distorted.
+::
+
+classmethods::
+
+method:: ar, kr
+
+argument:: bufnum
+Number of a mono buffer containing the source sound.
+
+argument:: repeats
+How many times each detected waveset is replayed before moving on.
+Integer, clipped to a minimum of code::1::. (default: code::4::)
+
+argument:: rate
+Playback rate applied to each waveset (transposition). code::1:: is the
+source's own pitch, code::2:: an octave up, code::0.5:: an octave down.
+Must be greater than code::0::. (default: code::1::)
+
+argument:: numCycles
+Number of full wavecycles grouped into one waveset (CDP's emphasis::cyclecnt::).
+Larger values use longer wavesets, giving a coarser, more recognisable grain.
+Integer, minimum code::1::. (default: code::1::)
+
+argument:: startPos
+Read position, in frames, at which detection begins. Read once at init time.
+(default: code::0::)
+
+argument:: mul
+
+argument:: add
+
+discussion::
+
+When the read pointer reaches the end of the buffer it wraps back to the start,
+so the UGen plays indefinitely.
+
+examples::
+
+code::
+s.boot;
+
+// load a mono source sound
+b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
+
+// classic waveset repeat: each waveset played 6x -> stretched, buzzy
+(
+x = { WavesetRepeat.ar(b, repeats: 6) * 0.5 ! 2 }.play;
+)
+x.free;
+
+// modulate the repeat count for shifting texture
+(
+x = {
+	var rep = LFNoise0.kr(4).range(1, 12).round;
+	WavesetRepeat.ar(b, repeats: rep, numCycles: 1) * 0.5 ! 2
+}.play;
+)
+x.free;
+
+// longer wavesets (numCycles) + transposition
+(
+x = { WavesetRepeat.ar(b, repeats: 4, rate: 1.5, numCycles: 3) * 0.4 ! 2 }.play;
+)
+x.free;
+::
