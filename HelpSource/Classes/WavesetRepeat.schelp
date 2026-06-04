@@ -49,6 +49,15 @@ argument:: startPos
 Read position, in frames, at which detection begins. Read once at init time.
 (default: code::0::)
 
+argument:: oversample
+Anti-aliasing oversampling factor, one of code::1::, code::2::, code::4::,
+code::8:: (other values snap down to the nearest). Repeating wavesets creates
+slope discontinuities whose harmonics fold back as aliasing; with
+code::oversample > 1:: the read/repeat loop runs at that multiple of the sample
+rate and is decimated through an 8th-order Butterworth low-pass, removing
+content above Nyquist before it folds. code::1:: bypasses the filter (the raw,
+grittier sound). Read once at init time. (default: code::1::)
+
 argument:: mul
 
 argument:: add
@@ -84,6 +93,17 @@ x.free;
 // longer wavesets (numCycles) + transposition
 (
 x = { WavesetRepeat.ar(b, repeats: 4, rate: 1.5, numCycles: 3) * 0.4 ! 2 }.play;
+)
+x.free;
+
+// A/B the anti-aliasing (oversample is read at init, so use two synths).
+// Transposing up + short wavesets makes the aliasing most audible.
+(
+x = { WavesetRepeat.ar(b, repeats: 8, rate: 2, numCycles: 1, oversample: 1) * 0.4 ! 2 }.play; // raw
+)
+x.free;
+(
+x = { WavesetRepeat.ar(b, repeats: 8, rate: 2, numCycles: 1, oversample: 8) * 0.4 ! 2 }.play; // anti-aliased
 )
 x.free;
 ::
