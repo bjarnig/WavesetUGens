@@ -1,0 +1,43 @@
+class:: WavesetReorder
+summary:: Plays each group of wavesets in reverse order
+categories:: UGens>Buffer, UGens>Distortion
+related:: Classes/WavesetShuffle, Classes/WavesetReverse
+
+description::
+
+Walks a mono buffer in wavesets (code::numCycles:: wavecycles between zero
+crossings) and plays each successive group of code::groupSize:: wavesets in
+reverse order. Unlike link::Classes/WavesetReverse:: (which flips the samples
+within each waveset), this reorders whole wavesets. The read pointer wraps at the
+end of the buffer.
+
+classmethods::
+
+method:: ar, kr
+
+argument:: bufnum
+Number of a mono buffer containing the source sound.
+
+argument:: groupSize
+Wavesets per reordered group. Integer code::1::–code::64::. (default: code::4::)
+
+argument:: rate
+Playback rate per waveset (transposition; > 0). (default: code::1::)
+
+argument:: numCycles
+Full wavecycles per waveset. Integer, minimum code::1::. (default: code::1::)
+
+argument:: startPos
+Read position, in frames, at which detection begins (read once at init).
+(default: code::0::)
+
+argument:: mul
+argument:: add
+
+examples::
+
+code::
+s.boot;
+b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
+{ WavesetReorder.ar(b, groupSize: 8) * 0.5 ! 2 }.play;
+::

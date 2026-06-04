@@ -15,6 +15,11 @@ fluently.
 - **`WavesetOmit`** — plays `keep` wavesets, silences `skip` (timing preserved).
 - **`WavesetDelete`** — plays `keep` wavesets, drops `drop` (compresses).
 - **`WavesetMultiply`** — pitches each waveset up by `factor`, duration preserved.
+- **`WavesetReplace`** — replaces each waveset with a sine of matching length/amplitude.
+- **`WavesetNorm`** — normalizes each waveset to peak `amp` (flattens dynamics).
+- **`WavesetReorder`** — plays each group of `groupSize` wavesets in reverse order.
+- **`WavesetShuffle`** — random (seeded) permutation of wavesets within groups.
+- **`WavesetInterpolate`** — morphs between consecutive wavesets (`stretch`× time-stretch).
 
 ## Install (prebuilt)
 

@@ -1,0 +1,45 @@
+class:: WavesetShuffle
+summary:: Plays each group of wavesets in a random (seeded) order
+categories:: UGens>Buffer, UGens>Distortion
+related:: Classes/WavesetReorder, Classes/WavesetReverse
+
+description::
+
+Walks a mono buffer in wavesets (code::numCycles:: wavecycles between zero
+crossings) and replays each successive group of code::groupSize:: wavesets in a
+random permutation. The order is determined by code::seed:: (read once at init),
+so a given seed is reproducible. The read pointer wraps at the end of the buffer.
+
+classmethods::
+
+method:: ar, kr
+
+argument:: bufnum
+Number of a mono buffer containing the source sound.
+
+argument:: groupSize
+Wavesets per shuffled group. Integer code::1::–code::64::. (default: code::4::)
+
+argument:: seed
+Random seed for the permutation (read once at init). (default: code::0::)
+
+argument:: rate
+Playback rate per waveset (transposition; > 0). (default: code::1::)
+
+argument:: numCycles
+Full wavecycles per waveset. Integer, minimum code::1::. (default: code::1::)
+
+argument:: startPos
+Read position, in frames, at which detection begins (read once at init).
+(default: code::0::)
+
+argument:: mul
+argument:: add
+
+examples::
+
+code::
+s.boot;
+b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
+{ WavesetShuffle.ar(b, groupSize: 8, seed: 42) * 0.5 ! 2 }.play;
+::

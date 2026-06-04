@@ -77,7 +77,9 @@ message(STATUS "Install directory set to: ${CMAKE_INSTALL_PREFIX}")
 #   -> creates <name>_scsynth (and <name>_supernova if SUPERNOVA), forces .scx / no prefix,
 #      sets include dirs + compiler flags, installs .scx/.sc/.schelp under <prefix>/<dest_dir>.
 
-foreach(ugen WavesetRepeat WavesetReverse WavesetOmit WavesetDelete WavesetMultiply)
+foreach(ugen
+    WavesetRepeat WavesetReverse WavesetOmit WavesetDelete WavesetMultiply
+    WavesetReplace WavesetNorm WavesetReorder WavesetShuffle WavesetInterpolate)
     sc_add_server_plugin(
         "WavesetUGens"                               # destination dir under install prefix
         "${ugen}"                                    # target base name

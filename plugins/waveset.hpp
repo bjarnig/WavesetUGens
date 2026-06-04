@@ -34,4 +34,35 @@ static inline float readLin(const float* data, int frames, double pos) {
     return (float)(a + frac * (b - a));
 }
 
+// Half-open span of a detected waveset; end < 0 means none could be found.
+struct Span {
+    int start;
+    int end;
+};
+
+// Next waveset at or after `pos`, wrapping to 0 at the end of the buffer.
+static inline Span nextWaveset(const float* data, int frames, int pos, int numCycles) {
+    if (pos >= frames)
+        pos = 0;
+    int end = findEnd(data, frames, pos, numCycles);
+    if (end < 0) {
+        pos = 0;
+        end = findEnd(data, frames, 0, numCycles);
+    }
+    return Span { pos, end };
+}
+
+// Peak absolute value over [start, start + len).
+static inline float peakAbs(const float* data, int start, int len) {
+    float p = 0.f;
+    for (int i = 0; i < len; i++) {
+        float a = data[start + i];
+        if (a < 0.f)
+            a = -a;
+        if (a > p)
+            p = a;
+    }
+    return p;
+}
+
 } // namespace waveset
