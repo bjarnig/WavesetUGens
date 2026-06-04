@@ -1,41 +1,45 @@
-// WavesetShuffle - plays each group of `groupSize` wavesets in a random
-// (seeded) order. Only waveset boundaries are stored. Mono buffers only.
+// WavesetShuffle - CDP SHUFFLE. A window of `domain` consecutive wavesets is
+// emitted in the order given by `image`, a sequence of indices into the domain
+// that may reorder, omit, or duplicate them (duplication time-stretches). Each
+// waveset is `cyclecnt` wavecycles. Mono buffers only.
+//
+// Inputs: bufnum, cyclecnt, rate, startPos, domainSize, imageLen, image[0..].
 
 #include "waveset.hpp"
-#include "SC_RGen.h"
 
-static const int kMaxGroup = 64;
+static const int kImageBase = 6; // first image-index input
 
 static InterfaceTable* ft;
 
 struct WavesetShuffle : public Unit {
     float m_fbufnum; // required by GET_BUF
     SndBuf* m_buf;
-    int m_start[kMaxGroup];
-    int m_len[kMaxGroup];
-    int m_order[kMaxGroup];
-    int m_count;
-    int m_orderPos; // index into m_order; >= m_count => need a new group
+    int m_start[waveset::kMaxGroup];
+    int m_len[waveset::kMaxGroup];
+    int m_count; // wavesets detected in the current domain window
+    int m_imgPos; // >= imageLen => load the next window
     int m_srcPos;
     int m_curStart;
     int m_curLen;
     double m_phase;
-    RGen m_rgen;
 };
 
 void WavesetShuffle_next(WavesetShuffle* unit, int inNumSamples) {
     GET_BUF
     float* out = OUT(0);
 
-    int groupSize = (int)ZIN0(1);
-    float rate = ZIN0(3);
-    int numCycles = (int)ZIN0(4);
-    if (groupSize < 1)
-        groupSize = 1;
-    if (groupSize > kMaxGroup)
-        groupSize = kMaxGroup;
-    if (numCycles < 1)
-        numCycles = 1;
+    int cyclecnt = (int)ZIN0(1);
+    float rate = ZIN0(2);
+    int domainSize = (int)ZIN0(4);
+    int imageLen = (int)ZIN0(5);
+    if (cyclecnt < 1)
+        cyclecnt = 1;
+    if (domainSize < 1)
+        domainSize = 1;
+    if (domainSize > waveset::kMaxGroup)
+        domainSize = waveset::kMaxGroup;
+    if (imageLen < 1)
+        imageLen = 1;
     if (rate <= 0.f)
         rate = 1.f;
 
@@ -45,7 +49,7 @@ void WavesetShuffle_next(WavesetShuffle* unit, int inNumSamples) {
     }
 
     int count = unit->m_count;
-    int orderPos = unit->m_orderPos;
+    int imgPos = unit->m_imgPos;
     int srcPos = unit->m_srcPos;
     int curStart = unit->m_curStart;
     int curLen = unit->m_curLen;
@@ -54,11 +58,11 @@ void WavesetShuffle_next(WavesetShuffle* unit, int inNumSamples) {
 
     for (int s = 0; s < inNumSamples; s++) {
         if (curLen <= 0) {
-            if (orderPos >= count) {
+            if (imgPos >= imageLen) {
                 int n = 0;
                 int pos = srcPos;
-                for (; n < groupSize; n++) {
-                    waveset::Span sp = waveset::nextWaveset(bufData, frames, pos, numCycles);
+                for (; n < domainSize; n++) {
+                    waveset::Span sp = waveset::nextWaveset(bufData, frames, pos, cyclecnt);
                     if (sp.end < 0)
                         break;
                     unit->m_start[n] = sp.start;
@@ -71,19 +75,15 @@ void WavesetShuffle_next(WavesetShuffle* unit, int inNumSamples) {
                 }
                 count = n;
                 srcPos = pos;
-                for (int i = 0; i < count; i++)
-                    unit->m_order[i] = i;
-                for (int i = count - 1; i > 0; i--) { // Fisher-Yates
-                    int j = unit->m_rgen.irand(i + 1);
-                    int t = unit->m_order[i];
-                    unit->m_order[i] = unit->m_order[j];
-                    unit->m_order[j] = t;
-                }
-                orderPos = 0;
+                imgPos = 0;
             }
-            int w = unit->m_order[orderPos];
-            curStart = unit->m_start[w];
-            curLen = unit->m_len[w];
+            int idx = (int)ZIN0(kImageBase + imgPos);
+            if (idx < 0)
+                idx = 0;
+            if (idx >= count)
+                idx = count - 1;
+            curStart = unit->m_start[idx];
+            curLen = unit->m_len[idx];
             phase = 0.0;
         }
 
@@ -91,13 +91,13 @@ void WavesetShuffle_next(WavesetShuffle* unit, int inNumSamples) {
 
         phase += rate;
         if (phase >= (double)curLen) {
-            orderPos++;
+            imgPos++;
             curLen = 0;
         }
     }
 
     unit->m_count = count;
-    unit->m_orderPos = orderPos;
+    unit->m_imgPos = imgPos;
     unit->m_srcPos = srcPos;
     unit->m_curStart = curStart;
     unit->m_curLen = curLen;
@@ -108,14 +108,13 @@ void WavesetShuffle_Ctor(WavesetShuffle* unit) {
     unit->m_fbufnum = -1e9f;
     unit->m_buf = nullptr;
 
-    int startPos = (int)ZIN0(5);
+    int startPos = (int)ZIN0(3);
     unit->m_srcPos = (startPos < 0) ? 0 : startPos;
     unit->m_count = 0;
-    unit->m_orderPos = 0; // 0 >= 0 => first block detects a group
+    unit->m_imgPos = 1 << 30; // force the first block to load a window
     unit->m_curStart = 0;
     unit->m_curLen = 0;
     unit->m_phase = 0.0;
-    unit->m_rgen.init((uint32)(int)ZIN0(2)); // seed
 
     SETCALC(WavesetShuffle_next);
     ClearUnitOutputs(unit, 1);

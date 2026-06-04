@@ -1,14 +1,14 @@
 class:: WavesetReplace
-summary:: Replaces each waveset with a sine of matching length and amplitude
+summary:: The strongest wavecycle in each group replaces the others (CDP-style)
 categories:: UGens>Buffer, UGens>Distortion
-related:: Classes/WavesetNorm, Classes/WavesetRepeat
+related:: Classes/WavesetDelete, Classes/WavesetRepeat
 
 description::
 
-Walks a mono buffer in wavesets (code::numCycles:: wavecycles between zero
-crossings) and replaces each with a sine wave of the same duration and the
-waveset's peak amplitude. The waveset rhythm and pitch are kept while the timbre
-is smoothed toward a sinusoid. The read pointer wraps at the end of the buffer.
+Port of CDP's waveset REPLACE. In each group of code::cyclecnt:: wavecycles, the
+loudest (highest-peak) wavecycle replaces the others, simplifying the sound. Each
+slot keeps its original duration (the strongest shape is fitted to it), so timing
+is preserved. The read pointer wraps at the end of the buffer.
 
 classmethods::
 
@@ -17,15 +17,16 @@ method:: ar, kr
 argument:: bufnum
 Number of a mono buffer containing the source sound.
 
-argument:: rate
-Playback rate per waveset (transposition; > 0). (default: code::1::)
+argument:: cyclecnt
+Group size in wavecycles. Integer code::1::–code::256::. (default: code::2::)
 
-argument:: numCycles
-Full wavecycles per waveset. Integer, minimum code::1::. (default: code::1::)
+argument:: rate
+Playback rate per wavecycle (transposition; > 0). SC extension.
+(default: code::1::)
 
 argument:: startPos
-Read position, in frames, at which detection begins (read once at init).
-(default: code::0::)
+Read position in frames at which detection begins (read once at init). SC
+extension. (default: code::0::)
 
 argument:: mul
 argument:: add
@@ -35,5 +36,5 @@ examples::
 code::
 s.boot;
 b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
-{ WavesetReplace.ar(b) * 0.5 ! 2 }.play;
+{ WavesetReplace.ar(b, cyclecnt: 4) * 0.5 ! 2 }.play;
 ::

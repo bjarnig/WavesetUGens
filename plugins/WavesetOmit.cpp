@@ -1,5 +1,5 @@
-// WavesetOmit - plays `keep` wavesets, then silences `skip` wavesets' worth
-// (timing preserved). Mono buffers only.
+// WavesetOmit - silences `omit` out of every `outOf` wavesets, replacing them
+// with silence (timing preserved). Mono buffers only.
 
 #include "waveset.hpp"
 
@@ -19,21 +19,20 @@ void WavesetOmit_next(WavesetOmit* unit, int inNumSamples) {
     GET_BUF
     float* out = OUT(0);
 
-    int keep = (int)ZIN0(1);
-    int skip = (int)ZIN0(2);
+    int omit = (int)ZIN0(1);
+    int outOf = (int)ZIN0(2);
     float rate = ZIN0(3);
-    int numCycles = (int)ZIN0(4);
-    if (keep < 0)
-        keep = 0;
-    if (skip < 0)
-        skip = 0;
-    int period = keep + skip;
-    if (period < 1) {
-        keep = 1;
-        period = 1;
-    }
-    if (numCycles < 1)
-        numCycles = 1;
+    int cyclecnt = (int)ZIN0(4);
+    if (outOf < 1)
+        outOf = 1;
+    if (omit < 0)
+        omit = 0;
+    if (omit > outOf)
+        omit = outOf;
+    int keep = outOf - omit; // play `keep`, silence the trailing `omit`
+    int period = outOf;
+    if (cyclecnt < 1)
+        cyclecnt = 1;
     if (rate <= 0.f)
         rate = 1.f;
 
@@ -53,10 +52,10 @@ void WavesetOmit_next(WavesetOmit* unit, int inNumSamples) {
         if (wavesetLen <= 0) {
             if ((int)readPos >= frames)
                 readPos = 0.0;
-            int end = waveset::findEnd(bufData, frames, (int)readPos, numCycles);
+            int end = waveset::findEnd(bufData, frames, (int)readPos, cyclecnt);
             if (end < 0) {
                 readPos = 0.0;
-                end = waveset::findEnd(bufData, frames, 0, numCycles);
+                end = waveset::findEnd(bufData, frames, 0, cyclecnt);
                 if (end < 0) {
                     out[s] = 0.f;
                     continue;

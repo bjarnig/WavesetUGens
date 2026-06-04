@@ -1,15 +1,14 @@
 class:: WavesetMultiply
-summary:: Multiplies the wavecycle rate within each waveset (CDP-style)
+summary:: Raises the wavecycle frequency within each waveset (CDP-style)
 categories:: UGens>Buffer, UGens>Distortion
-related:: Classes/WavesetRepeat, Classes/WavesetReverse, Classes/WavesetOmit
+related:: Classes/WavesetRepeat, Classes/WavesetInterpolate
 
 description::
 
-Walks a mono buffer in wavesets (code::numCycles:: wavecycles between zero
-crossings) and plays each one code::factor:: times at code::factor:: x speed, so
-it still fills its original time span. The result is pitched up by code::factor::
-while the duration is preserved — a harmonic, buzzy thickening. The read pointer
-wraps at the end of the buffer.
+Port of CDP's waveset MULTIPLY. Plays each waveset code::multiplier:: times at
+code::multiplier:: x speed, so it fills its original span: pitch rises by
+code::multiplier:: while duration is preserved. The read pointer wraps at the end
+of the buffer.
 
 classmethods::
 
@@ -18,19 +17,18 @@ method:: ar, kr
 argument:: bufnum
 Number of a mono buffer containing the source sound.
 
-argument:: factor
-Pitch multiplier (and number of internal repeats). Integer, minimum code::1::.
-(default: code::2::)
+argument:: multiplier
+Frequency multiplier. Integer code::1::–code::16::. (default: code::2::)
 
 argument:: rate
-Additional playback rate per waveset (transposition; > 0). (default: code::1::)
+Playback rate per waveset (transposition; > 0). SC extension. (default: code::1::)
 
-argument:: numCycles
-Full wavecycles per waveset. Integer, minimum code::1::. (default: code::1::)
+argument:: cyclecnt
+Wavecycles per waveset. Integer, minimum code::1::. (default: code::1::)
 
 argument:: startPos
-Read position, in frames, at which detection begins (read once at init).
-(default: code::0::)
+Read position in frames at which detection begins (read once at init). SC
+extension. (default: code::0::)
 
 argument:: mul
 argument:: add
@@ -40,5 +38,5 @@ examples::
 code::
 s.boot;
 b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
-{ WavesetMultiply.ar(b, factor: 3) * 0.4 ! 2 }.play;
+{ WavesetMultiply.ar(b, multiplier: 3) * 0.4 ! 2 }.play;
 ::

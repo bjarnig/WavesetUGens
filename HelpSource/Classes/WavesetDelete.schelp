@@ -1,16 +1,14 @@
 class:: WavesetDelete
-summary:: Plays some wavesets, drops others (CDP-style)
+summary:: Keeps one wavecycle per group, dropping the rest (CDP-style)
 categories:: UGens>Buffer, UGens>Distortion
-related:: Classes/WavesetOmit, Classes/WavesetRepeat, Classes/WavesetReverse
+related:: Classes/WavesetOmit, Classes/WavesetReplace
 
 description::
 
-Walks a mono buffer in wavesets (code::numCycles:: wavecycles between zero
-crossings). For every group it plays code::keep:: wavesets, then drops the next
-code::drop:: wavesets entirely — the read pointer skips past them and the kept
-wavesets splice back-to-back, compressing the sound (unlike
-link::Classes/WavesetOmit::, which silences instead of removing). The read
-pointer wraps at the end of the buffer.
+Port of CDP's waveset DELETE. Time-contracts the sound by keeping one wavecycle
+from each group of code::cyclecnt:: and dropping the others (unlike
+link::Classes/WavesetOmit::, which silences without removing). The read pointer
+wraps at the end of the buffer.
 
 classmethods::
 
@@ -19,21 +17,20 @@ method:: ar, kr
 argument:: bufnum
 Number of a mono buffer containing the source sound.
 
-argument:: keep
-Wavesets played per group. Integer, minimum code::1::. (default: code::1::)
+argument:: mode
+Which wavecycle to keep: code::1:: = first, code::2:: = loudest, code::3:: =
+drop the weakest (keep the rest). (default: code::1::)
 
-argument:: drop
-Wavesets dropped per group. (default: code::1::)
+argument:: cyclecnt
+Group size in wavecycles. Integer code::2::–code::256::. (default: code::2::)
 
 argument:: rate
-Playback rate per waveset (transposition; > 0). (default: code::1::)
-
-argument:: numCycles
-Full wavecycles per waveset. Integer, minimum code::1::. (default: code::1::)
+Playback rate per wavecycle (transposition; > 0). SC extension.
+(default: code::1::)
 
 argument:: startPos
-Read position, in frames, at which detection begins (read once at init).
-(default: code::0::)
+Read position in frames at which detection begins (read once at init). SC
+extension. (default: code::0::)
 
 argument:: mul
 argument:: add
@@ -43,5 +40,5 @@ examples::
 code::
 s.boot;
 b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
-{ WavesetDelete.ar(b, keep: 1, drop: 2) * 0.5 ! 2 }.play;
+{ WavesetDelete.ar(b, mode: 2, cyclecnt: 3) * 0.5 ! 2 }.play;
 ::

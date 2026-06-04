@@ -1,14 +1,15 @@
 class:: WavesetShuffle
-summary:: Plays each group of wavesets in a random (seeded) order
+summary:: Reorders wavesets by a domain/image pattern (CDP-style)
 categories:: UGens>Buffer, UGens>Distortion
-related:: Classes/WavesetReorder, Classes/WavesetReverse
+related:: Classes/WavesetReverse, Classes/WavesetDelete
 
 description::
 
-Walks a mono buffer in wavesets (code::numCycles:: wavecycles between zero
-crossings) and replays each successive group of code::groupSize:: wavesets in a
-random permutation. The order is determined by code::seed:: (read once at init),
-so a given seed is reproducible. The read pointer wraps at the end of the buffer.
+Port of CDP's waveset SHUFFLE. A window of code::domain:: consecutive wavesets is
+emitted in the order given by code::image::, a pattern over the domain that may
+reorder, omit, or duplicate its elements — duplication time-stretches, omission
+shortens. After each pass the window advances to the next group of wavesets. The
+read pointer wraps at the end of the buffer.
 
 classmethods::
 
@@ -17,21 +18,25 @@ method:: ar, kr
 argument:: bufnum
 Number of a mono buffer containing the source sound.
 
-argument:: groupSize
-Wavesets per shuffled group. Integer code::1::–code::64::. (default: code::4::)
+argument:: domain
+The waveset window: a letter set such as code::"abcd":: (4 wavesets) or an
+integer window size. (default: code::4::)
 
-argument:: seed
-Random seed for the permutation (read once at init). (default: code::0::)
+argument:: image
+The output pattern: a string over the domain letters (e.g. code::"dccbba"::) or
+an array of integer indices into the domain (e.g. code::[3, 2, 2, 1, 1, 0]::).
+code::nil:: gives the identity order. Items may repeat or be omitted.
+
+argument:: cyclecnt
+Wavecycles per waveset (each domain element). Integer, minimum code::1::.
+(default: code::1::)
 
 argument:: rate
-Playback rate per waveset (transposition; > 0). (default: code::1::)
-
-argument:: numCycles
-Full wavecycles per waveset. Integer, minimum code::1::. (default: code::1::)
+Playback rate per waveset (transposition; > 0). SC extension. (default: code::1::)
 
 argument:: startPos
-Read position, in frames, at which detection begins (read once at init).
-(default: code::0::)
+Read position in frames at which detection begins (read once at init). SC
+extension. (default: code::0::)
 
 argument:: mul
 argument:: add
@@ -41,5 +46,13 @@ examples::
 code::
 s.boot;
 b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
-{ WavesetShuffle.ar(b, groupSize: 8, seed: 42) * 0.5 ! 2 }.play;
+
+// reverse groups of 4 wavesets
+{ WavesetShuffle.ar(b, "abcd", "dcba") * 0.5 ! 2 }.play;
+
+// duplicate -> time-stretch
+{ WavesetShuffle.ar(b, "abc", "aabbcc") * 0.5 ! 2 }.play;
+
+// numeric form
+{ WavesetShuffle.ar(b, 3, [2, 0, 1, 1]) * 0.5 ! 2 }.play;
 ::

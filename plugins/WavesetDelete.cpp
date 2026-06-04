@@ -1,5 +1,6 @@
-// WavesetDelete - plays `keep` wavesets, then drops `drop` (read pointer
-// advances, nothing emitted); kept wavesets splice back-to-back. Mono only.
+// WavesetDelete - keeps one wavecycle per group of `cyclecnt`, dropping the
+// rest (CDP DELETE), time-contracting. mode 1: keep first; 2: keep loudest;
+// 3: drop the weakest (keep the rest). Mono buffers only.
 
 #include "waveset.hpp"
 
@@ -8,26 +9,32 @@ static InterfaceTable* ft;
 struct WavesetDelete : public Unit {
     float m_fbufnum; // required by GET_BUF
     SndBuf* m_buf;
-    double m_readPos;
+    int m_start[waveset::kMaxGroup];
+    int m_len[waveset::kMaxGroup];
+    int m_play[waveset::kMaxGroup]; // indices to play, in order
+    int m_playCount;
+    int m_playIdx; // >= m_playCount => need a new group
+    int m_srcPos;
+    int m_curStart;
+    int m_curLen;
     double m_phase;
-    int m_wavesetLen;
-    int m_played; // consecutive played wavesets since the last drop
 };
 
 void WavesetDelete_next(WavesetDelete* unit, int inNumSamples) {
     GET_BUF
     float* out = OUT(0);
 
-    int keep = (int)ZIN0(1);
-    int drop = (int)ZIN0(2);
+    int mode = (int)ZIN0(1);
+    int cyclecnt = (int)ZIN0(2);
     float rate = ZIN0(3);
-    int numCycles = (int)ZIN0(4);
-    if (keep < 1)
-        keep = 1;
-    if (drop < 0)
-        drop = 0;
-    if (numCycles < 1)
-        numCycles = 1;
+    if (mode < 1)
+        mode = 1;
+    if (mode > 3)
+        mode = 3;
+    if (cyclecnt < 2)
+        cyclecnt = 2;
+    if (cyclecnt > waveset::kMaxGroup)
+        cyclecnt = waveset::kMaxGroup;
     if (rate <= 0.f)
         rate = 1.f;
 
@@ -36,70 +43,100 @@ void WavesetDelete_next(WavesetDelete* unit, int inNumSamples) {
         return;
     }
 
-    double readPos = unit->m_readPos;
+    int playCount = unit->m_playCount;
+    int playIdx = unit->m_playIdx;
+    int srcPos = unit->m_srcPos;
+    int curStart = unit->m_curStart;
+    int curLen = unit->m_curLen;
     double phase = unit->m_phase;
-    int wavesetLen = unit->m_wavesetLen;
-    int played = unit->m_played;
     const int frames = (int)bufFrames;
 
     for (int s = 0; s < inNumSamples; s++) {
-        if (wavesetLen <= 0) {
-            // After `keep` played wavesets, advance past `drop` wavesets.
-            if (played >= keep) {
-                for (int d = 0; d < drop; d++) {
-                    if ((int)readPos >= frames)
-                        readPos = 0.0;
-                    int e = waveset::findEnd(bufData, frames, (int)readPos, numCycles);
-                    if (e < 0) {
-                        readPos = 0.0;
-                        e = waveset::findEnd(bufData, frames, 0, numCycles);
-                        if (e < 0)
-                            break;
-                    }
-                    readPos = (double)e;
+        if (curLen <= 0) {
+            if (playIdx >= playCount) {
+                int n = 0;
+                int pos = srcPos;
+                for (; n < cyclecnt; n++) {
+                    waveset::Span sp = waveset::nextWaveset(bufData, frames, pos, 1);
+                    if (sp.end < 0)
+                        break;
+                    unit->m_start[n] = sp.start;
+                    unit->m_len[n] = sp.end - sp.start;
+                    pos = sp.end;
                 }
-                played = 0;
-            }
-            if ((int)readPos >= frames)
-                readPos = 0.0;
-            int end = waveset::findEnd(bufData, frames, (int)readPos, numCycles);
-            if (end < 0) {
-                readPos = 0.0;
-                end = waveset::findEnd(bufData, frames, 0, numCycles);
-                if (end < 0) {
+                if (n == 0) {
                     out[s] = 0.f;
                     continue;
                 }
+                srcPos = pos;
+
+                if (mode == 1) { // keep first
+                    unit->m_play[0] = 0;
+                    playCount = 1;
+                } else if (mode == 2) { // keep loudest
+                    int best = 0;
+                    float bestPk = -1.f;
+                    for (int i = 0; i < n; i++) {
+                        float pk = waveset::peakAbs(bufData, unit->m_start[i], unit->m_len[i]);
+                        if (pk > bestPk) {
+                            bestPk = pk;
+                            best = i;
+                        }
+                    }
+                    unit->m_play[0] = best;
+                    playCount = 1;
+                } else { // mode 3: drop weakest, keep the rest in order
+                    int worst = 0;
+                    float worstPk = 1e30f;
+                    for (int i = 0; i < n; i++) {
+                        float pk = waveset::peakAbs(bufData, unit->m_start[i], unit->m_len[i]);
+                        if (pk < worstPk) {
+                            worstPk = pk;
+                            worst = i;
+                        }
+                    }
+                    int pc = 0;
+                    for (int i = 0; i < n; i++)
+                        if (i != worst)
+                            unit->m_play[pc++] = i;
+                    playCount = pc;
+                }
+                playIdx = 0;
             }
-            wavesetLen = end - (int)readPos;
+            int w = unit->m_play[playIdx];
+            curStart = unit->m_start[w];
+            curLen = unit->m_len[w];
             phase = 0.0;
-            played++;
         }
 
-        out[s] = waveset::readLin(bufData, frames, readPos + phase);
+        out[s] = waveset::readLin(bufData, frames, (double)curStart + phase);
 
         phase += rate;
-        if (phase >= (double)wavesetLen) {
-            readPos += (double)wavesetLen;
-            wavesetLen = 0;
+        if (phase >= (double)curLen) {
+            playIdx++;
+            curLen = 0;
         }
     }
 
-    unit->m_readPos = readPos;
+    unit->m_playCount = playCount;
+    unit->m_playIdx = playIdx;
+    unit->m_srcPos = srcPos;
+    unit->m_curStart = curStart;
+    unit->m_curLen = curLen;
     unit->m_phase = phase;
-    unit->m_wavesetLen = wavesetLen;
-    unit->m_played = played;
 }
 
 void WavesetDelete_Ctor(WavesetDelete* unit) {
     unit->m_fbufnum = -1e9f;
     unit->m_buf = nullptr;
 
-    int startPos = (int)ZIN0(5);
-    unit->m_readPos = (startPos < 0) ? 0.0 : (double)startPos;
+    int startPos = (int)ZIN0(4);
+    unit->m_srcPos = (startPos < 0) ? 0 : startPos;
+    unit->m_playCount = 0;
+    unit->m_playIdx = 0; // 0 >= 0 => first block detects a group
+    unit->m_curStart = 0;
+    unit->m_curLen = 0;
     unit->m_phase = 0.0;
-    unit->m_wavesetLen = 0;
-    unit->m_played = 0;
 
     SETCALC(WavesetDelete_next);
     ClearUnitOutputs(unit, 1);

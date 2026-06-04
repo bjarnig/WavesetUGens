@@ -10,16 +10,17 @@ fluently.
 
 ## UGens
 
-- **`WavesetRepeat`** — replays each waveset `repeats` times; time-stretches and distorts.
-- **`WavesetReverse`** — plays each waveset reversed in time.
-- **`WavesetOmit`** — plays `keep` wavesets, silences `skip` (timing preserved).
-- **`WavesetDelete`** — plays `keep` wavesets, drops `drop` (compresses).
-- **`WavesetMultiply`** — pitches each waveset up by `factor`, duration preserved.
-- **`WavesetReplace`** — replaces each waveset with a sine of matching length/amplitude.
-- **`WavesetNorm`** — normalizes each waveset to peak `amp` (flattens dynamics).
-- **`WavesetReorder`** — plays each group of `groupSize` wavesets in reverse order.
-- **`WavesetShuffle`** — random (seeded) permutation of wavesets within groups.
-- **`WavesetInterpolate`** — morphs between consecutive wavesets (`stretch`× time-stretch).
+Faithful ports of CDP's waveset DISTORT processes (parameters follow CDP
+conventions; `rate` and `startPos` are SuperCollider extensions).
+
+- **`WavesetRepeat`** (REPEAT) — replays each waveset `multiplier` times; time-stretches.
+- **`WavesetMultiply`** (MULTIPLY) — raises wavecycle frequency by `multiplier`, duration preserved.
+- **`WavesetInterpolate`** (INTERPOLATE) — morphs between consecutive wavesets (`multiplier`× stretch).
+- **`WavesetOmit`** (OMIT) — silences `omit` of every `outOf` wavesets (timing preserved).
+- **`WavesetDelete`** (DELETE) — keeps one wavecycle per `cyclecnt` group by `mode`; compresses.
+- **`WavesetReverse`** (REVERSE) — reverses the order of wavecycles within groups of `cyclecnt`.
+- **`WavesetReplace`** (REPLACE) — the loudest wavecycle in each `cyclecnt` group replaces the rest.
+- **`WavesetShuffle`** (SHUFFLE) — reorders wavesets by a `domain`/`image` pattern (reorder/omit/duplicate).
 
 ## Install (prebuilt)
 

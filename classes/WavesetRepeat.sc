@@ -1,10 +1,10 @@
 WavesetRepeat : UGen {
-	*ar { |bufnum, repeats = 4, rate = 1, numCycles = 1, startPos = 0, mul = 1, add = 0|
-		^this.multiNew('audio', bufnum, repeats, rate, numCycles, startPos).madd(mul, add)
+	*ar { |bufnum, multiplier = 2, rate = 1, cyclecnt = 1, startPos = 0, mul = 1, add = 0|
+		^this.multiNew('audio', bufnum, multiplier, rate, cyclecnt, startPos).madd(mul, add)
 	}
 
-	*kr { |bufnum, repeats = 4, rate = 1, numCycles = 1, startPos = 0, mul = 1, add = 0|
-		^this.multiNew('control', bufnum, repeats, rate, numCycles, startPos).madd(mul, add)
+	*kr { |bufnum, multiplier = 2, rate = 1, cyclecnt = 1, startPos = 0, mul = 1, add = 0|
+		^this.multiNew('control', bufnum, multiplier, rate, cyclecnt, startPos).madd(mul, add)
 	}
 
 	checkInputs { ^this.checkValidInputs }

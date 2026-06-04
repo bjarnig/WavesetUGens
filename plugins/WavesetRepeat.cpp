@@ -1,5 +1,5 @@
 // WavesetRepeat - CDP-style waveset repeat as a buffer-reading UGen.
-// Replays each waveset (numCycles wavecycles between zero crossings) `repeats`
+// Replays each waveset (cyclecnt wavecycles between zero crossings) `multiplier`
 // times before advancing. Mono buffers only.
 
 #include "waveset.hpp"
@@ -19,13 +19,13 @@ void WavesetRepeat_next(WavesetRepeat* unit, int inNumSamples) {
     GET_BUF
     float* out = OUT(0);
 
-    int repeats = (int)ZIN0(1);
+    int multiplier = (int)ZIN0(1);
     float rate = ZIN0(2);
-    int numCycles = (int)ZIN0(3);
-    if (repeats < 1)
-        repeats = 1;
-    if (numCycles < 1)
-        numCycles = 1;
+    int cyclecnt = (int)ZIN0(3);
+    if (multiplier < 1)
+        multiplier = 1;
+    if (cyclecnt < 1)
+        cyclecnt = 1;
     if (rate <= 0.f)
         rate = 1.f;
 
@@ -44,17 +44,17 @@ void WavesetRepeat_next(WavesetRepeat* unit, int inNumSamples) {
         if (wavesetLen <= 0) {
             if ((int)readPos >= frames)
                 readPos = 0.0;
-            int end = waveset::findEnd(bufData, frames, (int)readPos, numCycles);
+            int end = waveset::findEnd(bufData, frames, (int)readPos, cyclecnt);
             if (end < 0) {
                 readPos = 0.0;
-                end = waveset::findEnd(bufData, frames, 0, numCycles);
+                end = waveset::findEnd(bufData, frames, 0, cyclecnt);
                 if (end < 0) {
                     out[s] = 0.f;
                     continue;
                 }
             }
             wavesetLen = end - (int)readPos;
-            repeatsLeft = repeats;
+            repeatsLeft = multiplier;
             phase = 0.0;
         }
 

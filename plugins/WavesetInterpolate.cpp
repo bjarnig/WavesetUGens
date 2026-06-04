@@ -1,4 +1,4 @@
-// WavesetInterpolate - morphs between consecutive wavesets, emitting `stretch`
+// WavesetInterpolate - morphs between consecutive wavesets, emitting `multiplier`
 // crossfaded wavesets per source waveset (a waveset-based time-stretch). Mono.
 
 #include "waveset.hpp"
@@ -21,13 +21,13 @@ void WavesetInterpolate_next(WavesetInterpolate* unit, int inNumSamples) {
     GET_BUF
     float* out = OUT(0);
 
-    int stretch = (int)ZIN0(1);
+    int multiplier = (int)ZIN0(1);
     float rate = ZIN0(2);
-    int numCycles = (int)ZIN0(3);
-    if (stretch < 1)
-        stretch = 1;
-    if (numCycles < 1)
-        numCycles = 1;
+    int cyclecnt = (int)ZIN0(3);
+    if (multiplier < 1)
+        multiplier = 1;
+    if (cyclecnt < 1)
+        cyclecnt = 1;
     if (rate <= 0.f)
         rate = 1.f;
 
@@ -48,14 +48,14 @@ void WavesetInterpolate_next(WavesetInterpolate* unit, int inNumSamples) {
 
     for (int s = 0; s < inNumSamples; s++) {
         if (!inited) {
-            waveset::Span a = waveset::nextWaveset(bufData, frames, srcPos, numCycles);
+            waveset::Span a = waveset::nextWaveset(bufData, frames, srcPos, cyclecnt);
             if (a.end < 0) {
                 out[s] = 0.f;
                 continue;
             }
             startA = a.start;
             lenA = a.end - a.start;
-            waveset::Span b = waveset::nextWaveset(bufData, frames, a.end, numCycles);
+            waveset::Span b = waveset::nextWaveset(bufData, frames, a.end, cyclecnt);
             startB = (b.end < 0) ? startA : b.start;
             lenB = (b.end < 0) ? lenA : (b.end - b.start);
             srcPos = (b.end < 0) ? a.end : b.end;
@@ -65,7 +65,7 @@ void WavesetInterpolate_next(WavesetInterpolate* unit, int inNumSamples) {
         }
 
         if (outLen <= 0) {
-            f = (double)k / (double)stretch;
+            f = (double)k / (double)multiplier;
             outLen = (int)((1.0 - f) * lenA + f * lenB + 0.5);
             if (outLen < 1)
                 outLen = 1;
@@ -81,11 +81,11 @@ void WavesetInterpolate_next(WavesetInterpolate* unit, int inNumSamples) {
         if (phase >= (double)outLen) {
             outLen = 0;
             k++;
-            if (k >= stretch) { // advance the pair: A <- B, B <- next
+            if (k >= multiplier) { // advance the pair: A <- B, B <- next
                 k = 0;
                 startA = startB;
                 lenA = lenB;
-                waveset::Span nb = waveset::nextWaveset(bufData, frames, srcPos, numCycles);
+                waveset::Span nb = waveset::nextWaveset(bufData, frames, srcPos, cyclecnt);
                 if (nb.end >= 0) {
                     startB = nb.start;
                     lenB = nb.end - nb.start;

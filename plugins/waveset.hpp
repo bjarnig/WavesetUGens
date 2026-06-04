@@ -4,6 +4,7 @@
 namespace waveset {
 
 static const double kTwoPi = 6.283185307179586; // portable (MSVC lacks M_PI)
+static const int kMaxGroup = 256; // cap on wavesets buffered per group/window
 
 // Frame index one past `numCycles` full wavecycles from `start`, or -1 if the
 // scan runs off the end. Called once per emitted waveset, not per sample.

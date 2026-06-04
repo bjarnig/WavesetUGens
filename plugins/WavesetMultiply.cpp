@@ -1,5 +1,5 @@
-// WavesetMultiply - plays each waveset `factor` times at factor x speed, so it
-// fills its original span: pitch up by `factor`, duration preserved. Mono only.
+// WavesetMultiply - plays each waveset `multiplier` times at multiplier x speed,
+// filling its original span: pitch up by `multiplier`, duration preserved. Mono.
 
 #include "waveset.hpp"
 
@@ -18,16 +18,18 @@ void WavesetMultiply_next(WavesetMultiply* unit, int inNumSamples) {
     GET_BUF
     float* out = OUT(0);
 
-    int factor = (int)ZIN0(1);
+    int multiplier = (int)ZIN0(1);
     float rate = ZIN0(2);
-    int numCycles = (int)ZIN0(3);
-    if (factor < 1)
-        factor = 1;
-    if (numCycles < 1)
-        numCycles = 1;
+    int cyclecnt = (int)ZIN0(3);
+    if (multiplier < 1)
+        multiplier = 1;
+    if (multiplier > 16)
+        multiplier = 16;
+    if (cyclecnt < 1)
+        cyclecnt = 1;
     if (rate <= 0.f)
         rate = 1.f;
-    const double effRate = (double)rate * (double)factor;
+    const double effRate = (double)rate * (double)multiplier;
 
     if (!bufData || bufChannels != 1 || bufFrames < 2) {
         ClearUnitOutputs(unit, inNumSamples);
@@ -44,17 +46,17 @@ void WavesetMultiply_next(WavesetMultiply* unit, int inNumSamples) {
         if (wavesetLen <= 0) {
             if ((int)readPos >= frames)
                 readPos = 0.0;
-            int end = waveset::findEnd(bufData, frames, (int)readPos, numCycles);
+            int end = waveset::findEnd(bufData, frames, (int)readPos, cyclecnt);
             if (end < 0) {
                 readPos = 0.0;
-                end = waveset::findEnd(bufData, frames, 0, numCycles);
+                end = waveset::findEnd(bufData, frames, 0, cyclecnt);
                 if (end < 0) {
                     out[s] = 0.f;
                     continue;
                 }
             }
             wavesetLen = end - (int)readPos;
-            repeatsLeft = factor;
+            repeatsLeft = multiplier;
             phase = 0.0;
         }
 
