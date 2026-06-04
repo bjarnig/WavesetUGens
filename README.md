@@ -16,7 +16,16 @@ fluently.
 - **`WavesetDelete`** — plays `keep` wavesets, drops `drop` (compresses).
 - **`WavesetMultiply`** — pitches each waveset up by `factor`, duration preserved.
 
-## Build & install
+## Install (prebuilt)
+
+Download the archive for your OS from
+[Releases](https://github.com/bjarnig/WavesetUGens/releases), extract the
+`WavesetUGens/` folder into your SuperCollider Extensions folder, then recompile
+the class library (Cmd/Ctrl-Shift-L) and reboot the server. Binaries target
+SuperCollider 3.12–3.14.x (plugin API v3). On macOS, clear the download
+quarantine: `xattr -dr com.apple.quarantine <extracted WavesetUGens folder>`.
+
+## Build from source
 
 ```sh
 ./build.sh [path-to-supercollider-source]
