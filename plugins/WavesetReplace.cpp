@@ -51,7 +51,7 @@ void WavesetReplace_next(WavesetReplace* unit, int inNumSamples) {
         }
 
         double frac = phase / (double)wavesetLen; // 0..1 across the waveset
-        out[s] = peak * (float)sin(2.0 * M_PI * (double)numCycles * frac);
+        out[s] = peak * (float)sin(waveset::kTwoPi * (double)numCycles * frac);
 
         phase += rate;
         if (phase >= (double)wavesetLen) {
