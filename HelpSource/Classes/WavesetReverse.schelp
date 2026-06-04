@@ -1,0 +1,39 @@
+class:: WavesetReverse
+summary:: Plays each waveset reversed in time (CDP-style)
+categories:: UGens>Buffer, UGens>Distortion
+related:: Classes/WavesetRepeat, Classes/WavesetOmit, Classes/WavesetDelete
+
+description::
+
+Walks a mono buffer, detects each waveset (code::numCycles:: wavecycles between
+zero crossings) and plays it backwards. The read pointer wraps at the end of the
+buffer, so the UGen plays indefinitely.
+
+classmethods::
+
+method:: ar, kr
+
+argument:: bufnum
+Number of a mono buffer containing the source sound.
+
+argument:: rate
+Playback rate per waveset (transposition; must be > 0). (default: code::1::)
+
+argument:: numCycles
+Full wavecycles grouped into one waveset. Integer, minimum code::1::.
+(default: code::1::)
+
+argument:: startPos
+Read position, in frames, at which detection begins (read once at init).
+(default: code::0::)
+
+argument:: mul
+argument:: add
+
+examples::
+
+code::
+s.boot;
+b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
+{ WavesetReverse.ar(b, numCycles: 2) * 0.5 ! 2 }.play;
+::

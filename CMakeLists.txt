@@ -77,12 +77,14 @@ message(STATUS "Install directory set to: ${CMAKE_INSTALL_PREFIX}")
 #   -> creates <name>_scsynth (and <name>_supernova if SUPERNOVA), forces .scx / no prefix,
 #      sets include dirs + compiler flags, installs .scx/.sc/.schelp under <prefix>/<dest_dir>.
 
-sc_add_server_plugin(
-    "WavesetUGens"                                 # destination dir under install prefix
-    "WavesetRepeat"                                # target base name
-    "plugins/WavesetRepeat.cpp"                    # C++ sources
-    "classes/WavesetRepeat.sc"                     # SC class files
-    "HelpSource/Classes/WavesetRepeat.schelp"      # help files
-)
+foreach(ugen WavesetRepeat WavesetReverse WavesetOmit WavesetDelete WavesetMultiply)
+    sc_add_server_plugin(
+        "WavesetUGens"                               # destination dir under install prefix
+        "${ugen}"                                    # target base name
+        "plugins/${ugen}.cpp"                        # C++ sources
+        "classes/${ugen}.sc"                         # SC class files
+        "HelpSource/Classes/${ugen}.schelp"          # help files
+    )
+endforeach()
 
 message(STATUS "Generating plugin targets done")

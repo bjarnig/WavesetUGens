@@ -10,8 +10,11 @@ fluently.
 
 ## UGens
 
-- **`WavesetRepeat`** — replays each detected waveset `repeats` times before
-  advancing; time-stretches and distorts.
+- **`WavesetRepeat`** — replays each waveset `repeats` times; time-stretches and distorts.
+- **`WavesetReverse`** — plays each waveset reversed in time.
+- **`WavesetOmit`** — plays `keep` wavesets, silences `skip` (timing preserved).
+- **`WavesetDelete`** — plays `keep` wavesets, drops `drop` (compresses).
+- **`WavesetMultiply`** — pitches each waveset up by `factor`, duration preserved.
 
 ## Build & install
 

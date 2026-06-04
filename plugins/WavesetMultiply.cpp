@@ -1,33 +1,33 @@
-// WavesetRepeat - CDP-style waveset repeat as a buffer-reading UGen.
-// Replays each waveset (numCycles wavecycles between zero crossings) `repeats`
-// times before advancing. Mono buffers only.
+// WavesetMultiply - plays each waveset `factor` times at factor x speed, so it
+// fills its original span: pitch up by `factor`, duration preserved. Mono only.
 
 #include "waveset.hpp"
 
 static InterfaceTable* ft;
 
-struct WavesetRepeat : public Unit {
+struct WavesetMultiply : public Unit {
     float m_fbufnum; // required by GET_BUF
     SndBuf* m_buf;
-    double m_readPos; // start of current waveset, in frames
+    double m_readPos;
     double m_phase;
-    int m_wavesetLen; // 0 => none loaded
+    int m_wavesetLen;
     int m_repeatsLeft;
 };
 
-void WavesetRepeat_next(WavesetRepeat* unit, int inNumSamples) {
+void WavesetMultiply_next(WavesetMultiply* unit, int inNumSamples) {
     GET_BUF
     float* out = OUT(0);
 
-    int repeats = (int)ZIN0(1);
+    int factor = (int)ZIN0(1);
     float rate = ZIN0(2);
     int numCycles = (int)ZIN0(3);
-    if (repeats < 1)
-        repeats = 1;
+    if (factor < 1)
+        factor = 1;
     if (numCycles < 1)
         numCycles = 1;
     if (rate <= 0.f)
         rate = 1.f;
+    const double effRate = (double)rate * (double)factor;
 
     if (!bufData || bufChannels != 1 || bufFrames < 2) {
         ClearUnitOutputs(unit, inNumSamples);
@@ -54,13 +54,13 @@ void WavesetRepeat_next(WavesetRepeat* unit, int inNumSamples) {
                 }
             }
             wavesetLen = end - (int)readPos;
-            repeatsLeft = repeats;
+            repeatsLeft = factor;
             phase = 0.0;
         }
 
         out[s] = waveset::readLin(bufData, frames, readPos + phase);
 
-        phase += rate;
+        phase += effRate;
         if (phase >= (double)wavesetLen) {
             repeatsLeft--;
             if (repeatsLeft > 0) {
@@ -78,8 +78,8 @@ void WavesetRepeat_next(WavesetRepeat* unit, int inNumSamples) {
     unit->m_repeatsLeft = repeatsLeft;
 }
 
-void WavesetRepeat_Ctor(WavesetRepeat* unit) {
-    unit->m_fbufnum = -1e9f; // force GET_BUF to resolve the buffer
+void WavesetMultiply_Ctor(WavesetMultiply* unit) {
+    unit->m_fbufnum = -1e9f;
     unit->m_buf = nullptr;
 
     int startPos = (int)ZIN0(4);
@@ -88,11 +88,11 @@ void WavesetRepeat_Ctor(WavesetRepeat* unit) {
     unit->m_wavesetLen = 0;
     unit->m_repeatsLeft = 0;
 
-    SETCALC(WavesetRepeat_next);
+    SETCALC(WavesetMultiply_next);
     ClearUnitOutputs(unit, 1);
 }
 
-PluginLoad(WavesetRepeat) {
+PluginLoad(WavesetMultiply) {
     ft = inTable;
-    DefineSimpleUnit(WavesetRepeat);
+    DefineSimpleUnit(WavesetMultiply);
 }

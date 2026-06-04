@@ -1,29 +1,37 @@
-// WavesetRepeat - CDP-style waveset repeat as a buffer-reading UGen.
-// Replays each waveset (numCycles wavecycles between zero crossings) `repeats`
-// times before advancing. Mono buffers only.
+// WavesetOmit - plays `keep` wavesets, then silences `skip` wavesets' worth
+// (timing preserved). Mono buffers only.
 
 #include "waveset.hpp"
 
 static InterfaceTable* ft;
 
-struct WavesetRepeat : public Unit {
+struct WavesetOmit : public Unit {
     float m_fbufnum; // required by GET_BUF
     SndBuf* m_buf;
-    double m_readPos; // start of current waveset, in frames
+    double m_readPos;
     double m_phase;
-    int m_wavesetLen; // 0 => none loaded
-    int m_repeatsLeft;
+    int m_wavesetLen;
+    int m_groupIndex; // position in the keep+skip cycle
+    int m_silent; // current waveset omitted?
 };
 
-void WavesetRepeat_next(WavesetRepeat* unit, int inNumSamples) {
+void WavesetOmit_next(WavesetOmit* unit, int inNumSamples) {
     GET_BUF
     float* out = OUT(0);
 
-    int repeats = (int)ZIN0(1);
-    float rate = ZIN0(2);
-    int numCycles = (int)ZIN0(3);
-    if (repeats < 1)
-        repeats = 1;
+    int keep = (int)ZIN0(1);
+    int skip = (int)ZIN0(2);
+    float rate = ZIN0(3);
+    int numCycles = (int)ZIN0(4);
+    if (keep < 0)
+        keep = 0;
+    if (skip < 0)
+        skip = 0;
+    int period = keep + skip;
+    if (period < 1) {
+        keep = 1;
+        period = 1;
+    }
     if (numCycles < 1)
         numCycles = 1;
     if (rate <= 0.f)
@@ -37,7 +45,8 @@ void WavesetRepeat_next(WavesetRepeat* unit, int inNumSamples) {
     double readPos = unit->m_readPos;
     double phase = unit->m_phase;
     int wavesetLen = unit->m_wavesetLen;
-    int repeatsLeft = unit->m_repeatsLeft;
+    int groupIndex = unit->m_groupIndex;
+    int silent = unit->m_silent;
     const int frames = (int)bufFrames;
 
     for (int s = 0; s < inNumSamples; s++) {
@@ -54,45 +63,43 @@ void WavesetRepeat_next(WavesetRepeat* unit, int inNumSamples) {
                 }
             }
             wavesetLen = end - (int)readPos;
-            repeatsLeft = repeats;
             phase = 0.0;
+            silent = (groupIndex >= keep);
+            groupIndex = (groupIndex + 1) % period;
         }
 
-        out[s] = waveset::readLin(bufData, frames, readPos + phase);
+        out[s] = silent ? 0.f : waveset::readLin(bufData, frames, readPos + phase);
 
         phase += rate;
         if (phase >= (double)wavesetLen) {
-            repeatsLeft--;
-            if (repeatsLeft > 0) {
-                phase -= (double)wavesetLen;
-            } else {
-                readPos += (double)wavesetLen;
-                wavesetLen = 0;
-            }
+            readPos += (double)wavesetLen;
+            wavesetLen = 0;
         }
     }
 
     unit->m_readPos = readPos;
     unit->m_phase = phase;
     unit->m_wavesetLen = wavesetLen;
-    unit->m_repeatsLeft = repeatsLeft;
+    unit->m_groupIndex = groupIndex;
+    unit->m_silent = silent;
 }
 
-void WavesetRepeat_Ctor(WavesetRepeat* unit) {
-    unit->m_fbufnum = -1e9f; // force GET_BUF to resolve the buffer
+void WavesetOmit_Ctor(WavesetOmit* unit) {
+    unit->m_fbufnum = -1e9f;
     unit->m_buf = nullptr;
 
-    int startPos = (int)ZIN0(4);
+    int startPos = (int)ZIN0(5);
     unit->m_readPos = (startPos < 0) ? 0.0 : (double)startPos;
     unit->m_phase = 0.0;
     unit->m_wavesetLen = 0;
-    unit->m_repeatsLeft = 0;
+    unit->m_groupIndex = 0;
+    unit->m_silent = 0;
 
-    SETCALC(WavesetRepeat_next);
+    SETCALC(WavesetOmit_next);
     ClearUnitOutputs(unit, 1);
 }
 
-PluginLoad(WavesetRepeat) {
+PluginLoad(WavesetOmit) {
     ft = inTable;
-    DefineSimpleUnit(WavesetRepeat);
+    DefineSimpleUnit(WavesetOmit);
 }
