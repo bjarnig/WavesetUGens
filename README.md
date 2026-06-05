@@ -26,10 +26,9 @@ conventions; `rate` and `startPos` are SuperCollider extensions).
 - **`WavesetFractal`** (FRACTAL) — adds a miniature of the whole `scale`-cycle group into each cycle.
 - **`WavesetHarmonic`** (HARMONIC) — adds harmonics (`harmonics`/`amps`) over each cycle.
 - **`WavesetPitch`** (PITCH) — wandering random transposition per cycle (`octvary`, seedable).
+- **`WavesetDivide`** (DIVIDE) — divides wavecycle frequency by `divider`; dual of Multiply.
 
-The one remaining CDP DISTORT mode, **DIVIDE**, is not yet ported — it shares
-MULTIPLY's intricate half-cycle machinery and needs more study before a faithful
-port.
+This covers the full CDP waveset DISTORT family.
 
 ## Install (prebuilt)
 
