@@ -2,13 +2,9 @@
 
 # WavesetUGens
 
-SuperCollider server plugins (UGens) that port the waveset processes of the
-[Composers Desktop Project](https://www.composersdesktop.com/) (CDP) to
-buffer-reading UGens, in a similar format to `GrainBuf`.
+SuperCollider server plugins (UGens) that port the waveset processes of the [Composers Desktop Project](https://www.composersdesktop.com/) (CDP) to buffer-reading UGens, in a similar format to `GrainBuf`.
 
-A waveset is a span of signal between zero crossings. The source sound lives in
-a Buffer rather than streaming, which lets the waveset processes emit sound more
-fluently.
+A waveset is a span of signal between zero crossings. The source sound lives in a Buffer rather than streaming, which lets the waveset processes emit sound more fluently.
 
 ## UGens
 
@@ -59,6 +55,5 @@ source checkout matching the scsynth you run (see `build.sh`).
 
 ## Credits & license
 
-Ports of CDP waveset processes by Trevor Wishart and the Composers Desktop
-Project, not an official CDP product. Licensed under
+Ports of CDP waveset processes by Trevor Wishart and the Composers Desktop Project, not an official CDP product. Licensed under
 **GPL-3.0** (see [`LICENSE`](LICENSE)).
