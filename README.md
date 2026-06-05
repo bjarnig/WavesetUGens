@@ -1,3 +1,5 @@
+![WavesetUGens](docs/banner.svg)
+
 # WavesetUGens
 
 SuperCollider server plugins (UGens) that port the waveset processes of the
