@@ -1,0 +1,42 @@
+class:: WavesetFractal
+summary:: Adds self-similar detail to each wavecycle (CDP-style)
+categories:: UGens>Buffer, UGens>Distortion
+related:: Classes/WavesetHarmonic, Classes/WavesetRepeat
+
+description::
+
+Port of CDP's waveset FRACTAL. Takes each group of code::scale:: wavecycles as a
+"large" shape and adds a miniature copy of the whole group, scaled by code::amp::,
+into each constituent cycle — a self-similar perturbation. Length is preserved.
+The read pointer wraps at the end of the buffer.
+
+classmethods::
+
+method:: ar, kr
+
+argument:: bufnum
+Number of a mono buffer containing the source sound.
+
+argument:: scale
+Wavecycles in the "large" group. Integer code::1::–code::256::. (default: code::4::)
+
+argument:: amp
+Amplitude of the added miniature copy. (default: code::0.5::)
+
+argument:: rate
+Playback rate (transposition; > 0). SC extension. (default: code::1::)
+
+argument:: startPos
+Read position in frames where detection begins (read once at init). SC
+extension. (default: code::0::)
+
+argument:: mul
+argument:: add
+
+examples::
+
+code::
+s.boot;
+b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
+{ WavesetFractal.ar(b, 4, 0.5) * 0.4 ! 2 }.play;
+::

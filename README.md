@@ -21,6 +21,15 @@ conventions; `rate` and `startPos` are SuperCollider extensions).
 - **`WavesetReverse`** (REVERSE) — plays each group of `cyclecnt` wavecycles backwards.
 - **`WavesetReplace`** (REPLACE) — the loudest wavecycle in each `cyclecnt` group replaces the rest.
 - **`WavesetShuffle`** (SHUFFLE) — reorders wavesets by a `domain`/`image` pattern (reorder/omit/duplicate).
+- **`WavesetTelescope`** (TELESCOPE) — superimposes `cyclecnt` cycles into one (longest length); contracts.
+- **`WavesetAverage`** (AVERAGE) — superimposes `cyclecnt` cycles into one mean-length cycle.
+- **`WavesetFractal`** (FRACTAL) — adds a miniature of the whole `scale`-cycle group into each cycle.
+- **`WavesetHarmonic`** (HARMONIC) — adds harmonics (`harmonics`/`amps`) over each cycle.
+- **`WavesetPitch`** (PITCH) — wandering random transposition per cycle (`octvary`, seedable).
+
+The one remaining CDP DISTORT mode, **DIVIDE**, is not yet ported — it shares
+MULTIPLY's intricate half-cycle machinery and needs more study before a faithful
+port.
 
 ## Install (prebuilt)
 

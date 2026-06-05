@@ -1,0 +1,48 @@
+class:: WavesetPitch
+summary:: Random wandering transposition of each wavecycle (CDP-style)
+categories:: UGens>Buffer, UGens>Distortion
+related:: Classes/WavesetMultiply, Classes/WavesetRepeat
+
+description::
+
+Port of CDP's waveset PITCH ("flexitone"). Each wavecycle is resampled to a
+transposed length; the transposition wanders, picking a new random target within
++/- code::octvary:: octaves every random code::1::–code::cyclecnt:: cycles and
+interpolating between targets cycle-by-cycle. Produces pitch-bending texture. The
+read pointer wraps at the end of the buffer.
+
+classmethods::
+
+method:: ar, kr
+
+argument:: bufnum
+Number of a mono buffer containing the source sound.
+
+argument:: octvary
+Maximum transposition, in octaves (the +/- range). code::0::–code::8::.
+(default: code::0.3::)
+
+argument:: cyclecnt
+Maximum wavecycles between transposition-target changes. Integer, minimum
+code::1::. (default: code::64::)
+
+argument:: seed
+Random seed (read once at init); a given seed is reproducible. (default: code::0::)
+
+argument:: rate
+Playback rate (transposition; > 0). SC extension. (default: code::1::)
+
+argument:: startPos
+Read position in frames where detection begins (read once at init). SC
+extension. (default: code::0::)
+
+argument:: mul
+argument:: add
+
+examples::
+
+code::
+s.boot;
+b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
+{ WavesetPitch.ar(b, 0.5, 32, 7) * 0.5 ! 2 }.play;
+::

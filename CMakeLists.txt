@@ -79,7 +79,8 @@ message(STATUS "Install directory set to: ${CMAKE_INSTALL_PREFIX}")
 
 foreach(ugen
     WavesetRepeat WavesetReverse WavesetOmit WavesetDelete WavesetMultiply
-    WavesetReplace WavesetShuffle WavesetInterpolate)
+    WavesetReplace WavesetShuffle WavesetInterpolate
+    WavesetTelescope WavesetAverage WavesetFractal WavesetHarmonic WavesetPitch)
     sc_add_server_plugin(
         "WavesetUGens"                               # destination dir under install prefix
         "${ugen}"                                    # target base name

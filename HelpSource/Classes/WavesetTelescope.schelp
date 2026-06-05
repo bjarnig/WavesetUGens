@@ -1,0 +1,45 @@
+class:: WavesetTelescope
+summary:: Superimposes a group of wavecycles into one (CDP-style)
+categories:: UGens>Buffer, UGens>Distortion
+related:: Classes/WavesetAverage, Classes/WavesetRepeat
+
+description::
+
+Port of CDP's waveset TELESCOPE. Superimposes (averages) each group of
+code::cyclecnt:: wavecycles into a single output cycle, sampled at matched phase,
+time-contracting the sound. The output cycle length is the longest cycle of the
+group, or the mean if code::useMean:: is set. The read pointer wraps at the end
+of the buffer.
+
+classmethods::
+
+method:: ar, kr
+
+argument:: bufnum
+Number of a mono buffer containing the source sound.
+
+argument:: cyclecnt
+Wavecycles superimposed per output cycle. Integer code::1::–code::256::.
+(default: code::4::)
+
+argument:: useMean
+code::0:: = output length is the longest cycle; code::1:: = the mean.
+(default: code::0::)
+
+argument:: rate
+Playback rate (transposition; > 0). SC extension. (default: code::1::)
+
+argument:: startPos
+Read position in frames where detection begins (read once at init). SC
+extension. (default: code::0::)
+
+argument:: mul
+argument:: add
+
+examples::
+
+code::
+s.boot;
+b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
+{ WavesetTelescope.ar(b, 6) * 0.5 ! 2 }.play;
+::
