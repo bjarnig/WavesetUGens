@@ -5,10 +5,10 @@ related:: Classes/WavesetOmit, Classes/WavesetReplace
 
 description::
 
-Port of CDP's waveset DELETE. Time-contracts the sound by keeping one wavecycle
-from each group of code::cyclecnt:: and dropping the others (unlike
-link::Classes/WavesetOmit::, which silences without removing). The read pointer
-wraps at the end of the buffer.
+Port of CDP's waveset DELETE. Time-contracts the sound by dropping wavecycles
+(unlike link::Classes/WavesetOmit::, which silences without removing). Loudness
+is measured as the sum of sample magnitudes per cycle. The read pointer wraps at
+the end of the buffer.
 
 classmethods::
 
@@ -18,11 +18,13 @@ argument:: bufnum
 Number of a mono buffer containing the source sound.
 
 argument:: mode
-Which wavecycle to keep: code::1:: = first, code::2:: = loudest, code::3:: =
-drop the weakest (keep the rest). (default: code::1::)
+code::1:: = strict order: keep one cycle, then delete the next code::cyclecnt::.
+code::2:: = keep only the loudest of code::cyclecnt::. code::3:: = drop the
+quietest of code::cyclecnt:: (keep the rest, in order). (default: code::1::)
 
 argument:: cyclecnt
-Group size in wavecycles. Integer code::2::–code::256::. (default: code::2::)
+In mode 1, the number of cycles deleted after each kept cycle; in modes 2–3, the
+group size. Integer code::1::–code::256::. (default: code::2::)
 
 argument:: rate
 Playback rate per wavecycle (transposition; > 0). SC extension.

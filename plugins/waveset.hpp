@@ -68,4 +68,28 @@ static inline float peakAbs(const float* data, int start, int len) {
     return p;
 }
 
+// Sum of absolute values over [start, start + len). CDP's "loudness" metric for
+// the replace/delete cycle-selection processes.
+static inline double sumAbs(const float* data, int start, int len) {
+    double s = 0.0;
+    for (int i = 0; i < len; i++) {
+        float a = data[start + i];
+        s += (a < 0.f) ? -a : a;
+    }
+    return s;
+}
+
+// Frame index one past the half-wavecycle (single sign region) starting at
+// `start`, or -1 if it runs off the end. Used by the half-cycle multiply.
+static inline int findHalfEnd(const float* data, int frames, int start) {
+    int i = start;
+    if (data[i] >= 0.f)
+        while (i < frames && data[i] >= 0.f)
+            i++;
+    else
+        while (i < frames && data[i] <= 0.f)
+            i++;
+    return (i >= frames) ? -1 : i;
+}
+
 } // namespace waveset

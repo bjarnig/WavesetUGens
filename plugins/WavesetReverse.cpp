@@ -1,5 +1,5 @@
-// WavesetReverse - reverses the order of wavecycles within groups of `cyclecnt`
-// (CDP REVERSE: 3-2-1, 6-5-4, ...). Mono buffers only.
+// WavesetReverse - plays each group of `cyclecnt` wavecycles backwards (CDP
+// REVERSE reverses the samples of the whole group: 3-2-1, 6-5-4, ...). Mono.
 
 #include "waveset.hpp"
 
@@ -8,14 +8,9 @@ static InterfaceTable* ft;
 struct WavesetReverse : public Unit {
     float m_fbufnum; // required by GET_BUF
     SndBuf* m_buf;
-    int m_start[waveset::kMaxGroup];
-    int m_len[waveset::kMaxGroup];
-    int m_count; // wavecycles in the current group
-    int m_idx; // index being played (counts down); < 0 => need a new group
-    int m_srcPos;
-    int m_curStart;
-    int m_curLen;
+    double m_readPos; // start of the current group, in frames
     double m_phase;
+    int m_groupLen; // length of the current group in frames (0 => none loaded)
 };
 
 void WavesetReverse_next(WavesetReverse* unit, int inNumSamples) {
@@ -26,8 +21,6 @@ void WavesetReverse_next(WavesetReverse* unit, int inNumSamples) {
     float rate = ZIN0(2);
     if (cyclecnt < 1)
         cyclecnt = 1;
-    if (cyclecnt > waveset::kMaxGroup)
-        cyclecnt = waveset::kMaxGroup;
     if (rate <= 0.f)
         rate = 1.f;
 
@@ -36,55 +29,36 @@ void WavesetReverse_next(WavesetReverse* unit, int inNumSamples) {
         return;
     }
 
-    int count = unit->m_count;
-    int idx = unit->m_idx;
-    int srcPos = unit->m_srcPos;
-    int curStart = unit->m_curStart;
-    int curLen = unit->m_curLen;
+    double readPos = unit->m_readPos;
     double phase = unit->m_phase;
+    int groupLen = unit->m_groupLen;
     const int frames = (int)bufFrames;
 
     for (int s = 0; s < inNumSamples; s++) {
-        if (curLen <= 0) {
-            if (idx < 0) {
-                int n = 0;
-                int pos = srcPos;
-                for (; n < cyclecnt; n++) {
-                    waveset::Span sp = waveset::nextWaveset(bufData, frames, pos, 1);
-                    if (sp.end < 0)
-                        break;
-                    unit->m_start[n] = sp.start;
-                    unit->m_len[n] = sp.end - sp.start;
-                    pos = sp.end;
-                }
-                if (n == 0) {
-                    out[s] = 0.f;
-                    continue;
-                }
-                count = n;
-                srcPos = pos;
-                idx = count - 1; // reverse order
+        if (groupLen <= 0) {
+            waveset::Span sp = waveset::nextWaveset(bufData, frames, (int)readPos, cyclecnt);
+            if (sp.end < 0) {
+                out[s] = 0.f;
+                continue;
             }
-            curStart = unit->m_start[idx];
-            curLen = unit->m_len[idx];
+            readPos = (double)sp.start;
+            groupLen = sp.end - sp.start;
             phase = 0.0;
         }
 
-        out[s] = waveset::readLin(bufData, frames, (double)curStart + phase);
+        // read the group from its end backwards (sample reversal)
+        out[s] = waveset::readLin(bufData, frames, readPos + ((double)groupLen - phase));
 
         phase += rate;
-        if (phase >= (double)curLen) {
-            idx--;
-            curLen = 0;
+        if (phase >= (double)groupLen) {
+            readPos += (double)groupLen;
+            groupLen = 0;
         }
     }
 
-    unit->m_count = count;
-    unit->m_idx = idx;
-    unit->m_srcPos = srcPos;
-    unit->m_curStart = curStart;
-    unit->m_curLen = curLen;
+    unit->m_readPos = readPos;
     unit->m_phase = phase;
+    unit->m_groupLen = groupLen;
 }
 
 void WavesetReverse_Ctor(WavesetReverse* unit) {
@@ -92,12 +66,9 @@ void WavesetReverse_Ctor(WavesetReverse* unit) {
     unit->m_buf = nullptr;
 
     int startPos = (int)ZIN0(3);
-    unit->m_srcPos = (startPos < 0) ? 0 : startPos;
-    unit->m_count = 0;
-    unit->m_idx = -1;
-    unit->m_curStart = 0;
-    unit->m_curLen = 0;
+    unit->m_readPos = (startPos < 0) ? 0.0 : (double)startPos;
     unit->m_phase = 0.0;
+    unit->m_groupLen = 0;
 
     SETCALC(WavesetReverse_next);
     ClearUnitOutputs(unit, 1);

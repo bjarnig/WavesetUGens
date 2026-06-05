@@ -6,9 +6,9 @@ related:: Classes/WavesetDelete, Classes/WavesetRepeat
 description::
 
 Port of CDP's waveset REPLACE. In each group of code::cyclecnt:: wavecycles, the
-loudest (highest-peak) wavecycle replaces the others, simplifying the sound. Each
-slot keeps its original duration (the strongest shape is fitted to it), so timing
-is preserved. The read pointer wraps at the end of the buffer.
+loudest wavecycle (by sum of sample magnitudes) replaces the others: the group
+becomes that one cycle repeated code::cyclecnt:: times. The read pointer wraps at
+the end of the buffer.
 
 classmethods::
 

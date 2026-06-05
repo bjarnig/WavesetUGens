@@ -5,10 +5,11 @@ related:: Classes/WavesetRepeat, Classes/WavesetInterpolate
 
 description::
 
-Port of CDP's waveset MULTIPLY. Plays each waveset code::multiplier:: times at
-code::multiplier:: x speed, so it fills its original span: pitch rises by
-code::multiplier:: while duration is preserved. The read pointer wraps at the end
-of the buffer.
+Port of CDP's waveset MULTIPLY. Works on single half-wavecycles: each is
+compressed to code::1/multiplier:: of its length and emitted code::multiplier::
+times with alternating polarity, filling the original span with
+code::multiplier:: half-cycles. Pitch rises by code::multiplier:: while duration
+is preserved. The read pointer wraps at the end of the buffer.
 
 classmethods::
 
@@ -21,10 +22,7 @@ argument:: multiplier
 Frequency multiplier. Integer code::1::–code::16::. (default: code::2::)
 
 argument:: rate
-Playback rate per waveset (transposition; > 0). SC extension. (default: code::1::)
-
-argument:: cyclecnt
-Wavecycles per waveset. Integer, minimum code::1::. (default: code::1::)
+Playback rate (transposition; > 0). SC extension. (default: code::1::)
 
 argument:: startPos
 Read position in frames at which detection begins (read once at init). SC

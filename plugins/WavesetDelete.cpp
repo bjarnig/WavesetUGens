@@ -1,6 +1,8 @@
-// WavesetDelete - keeps one wavecycle per group of `cyclecnt`, dropping the
-// rest (CDP DELETE), time-contracting. mode 1: keep first; 2: keep loudest;
-// 3: drop the weakest (keep the rest). Mono buffers only.
+// WavesetDelete - time-contracts by dropping wavecycles (CDP DELETE). Loudness
+// is the sum of |samples| per cycle. Mono buffers only.
+//   mode 1 (strict order): keep 1 cycle, then delete the next `cyclecnt`.
+//   mode 2 (keep loudest):  of `cyclecnt` cycles, output only the loudest.
+//   mode 3 (drop weakest):  of `cyclecnt` cycles, output all but the quietest.
 
 #include "waveset.hpp"
 
@@ -31,17 +33,16 @@ void WavesetDelete_next(WavesetDelete* unit, int inNumSamples) {
         mode = 1;
     if (mode > 3)
         mode = 3;
-    if (cyclecnt < 2)
-        cyclecnt = 2;
-    if (cyclecnt > waveset::kMaxGroup)
-        cyclecnt = waveset::kMaxGroup;
+    if (cyclecnt < 1)
+        cyclecnt = 1;
+    if (mode == 3 && cyclecnt < 2)
+        cyclecnt = 2; // need >= 2 to drop one and keep some
+    // mode 1 keeps 1 then deletes cyclecnt -> group is cyclecnt + 1
+    int groupSize = (mode == 1) ? (cyclecnt + 1) : cyclecnt;
+    if (groupSize > waveset::kMaxGroup)
+        groupSize = waveset::kMaxGroup;
     if (rate <= 0.f)
         rate = 1.f;
-
-    if (!bufData || bufChannels != 1 || bufFrames < 2) {
-        ClearUnitOutputs(unit, inNumSamples);
-        return;
-    }
 
     int playCount = unit->m_playCount;
     int playIdx = unit->m_playIdx;
@@ -51,12 +52,17 @@ void WavesetDelete_next(WavesetDelete* unit, int inNumSamples) {
     double phase = unit->m_phase;
     const int frames = (int)bufFrames;
 
+    if (!bufData || bufChannels != 1 || bufFrames < 2) {
+        ClearUnitOutputs(unit, inNumSamples);
+        return;
+    }
+
     for (int s = 0; s < inNumSamples; s++) {
         if (curLen <= 0) {
             if (playIdx >= playCount) {
                 int n = 0;
                 int pos = srcPos;
-                for (; n < cyclecnt; n++) {
+                for (; n < groupSize; n++) {
                     waveset::Span sp = waveset::nextWaveset(bufData, frames, pos, 1);
                     if (sp.end < 0)
                         break;
@@ -70,30 +76,24 @@ void WavesetDelete_next(WavesetDelete* unit, int inNumSamples) {
                 }
                 srcPos = pos;
 
-                if (mode == 1) { // keep first
+                if (mode == 1) { // keep the first cycle, delete the rest
                     unit->m_play[0] = 0;
                     playCount = 1;
-                } else if (mode == 2) { // keep loudest
+                } else if (mode == 2) { // keep the loudest
                     int best = 0;
-                    float bestPk = -1.f;
+                    double bestL = -1.0;
                     for (int i = 0; i < n; i++) {
-                        float pk = waveset::peakAbs(bufData, unit->m_start[i], unit->m_len[i]);
-                        if (pk > bestPk) {
-                            bestPk = pk;
-                            best = i;
-                        }
+                        double l = waveset::sumAbs(bufData, unit->m_start[i], unit->m_len[i]);
+                        if (l > bestL) { bestL = l; best = i; }
                     }
                     unit->m_play[0] = best;
                     playCount = 1;
-                } else { // mode 3: drop weakest, keep the rest in order
+                } else { // mode 3: drop the quietest, keep the rest in order
                     int worst = 0;
-                    float worstPk = 1e30f;
+                    double worstL = 1e30;
                     for (int i = 0; i < n; i++) {
-                        float pk = waveset::peakAbs(bufData, unit->m_start[i], unit->m_len[i]);
-                        if (pk < worstPk) {
-                            worstPk = pk;
-                            worst = i;
-                        }
+                        double l = waveset::sumAbs(bufData, unit->m_start[i], unit->m_len[i]);
+                        if (l < worstL) { worstL = l; worst = i; }
                     }
                     int pc = 0;
                     for (int i = 0; i < n; i++)
@@ -102,6 +102,10 @@ void WavesetDelete_next(WavesetDelete* unit, int inNumSamples) {
                     playCount = pc;
                 }
                 playIdx = 0;
+                if (playCount < 1) { // degenerate (e.g. n == 1 in mode 3): skip
+                    out[s] = 0.f;
+                    continue;
+                }
             }
             int w = unit->m_play[playIdx];
             curStart = unit->m_start[w];

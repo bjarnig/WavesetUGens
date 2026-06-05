@@ -1,6 +1,6 @@
-// WavesetReplace - the strongest wavecycle in each group of `cyclecnt` replaces
-// the others (CDP REPLACE). Each slot keeps its original length (timing
-// preserved); the strongest shape is read into it. Mono buffers only.
+// WavesetReplace - the loudest wavecycle in each group of `cyclecnt` (by sum of
+// |samples|) replaces the others: the group becomes that cycle repeated
+// `cyclecnt` times, verbatim (CDP REPLACE / do_cycle_loudrep). Mono buffers only.
 
 #include "waveset.hpp"
 
@@ -11,12 +11,12 @@ struct WavesetReplace : public Unit {
     SndBuf* m_buf;
     int m_start[waveset::kMaxGroup];
     int m_len[waveset::kMaxGroup];
-    int m_count;
-    int m_slotIdx; // >= m_count => need a new group
-    int m_strongStart;
-    int m_strongLen;
+    int m_count; // wavecycles in the group (== repeats emitted)
+    int m_repIdx; // >= m_count => need a new group
+    int m_loudStart;
+    int m_loudLen;
     int m_srcPos;
-    int m_curLen; // length of the current slot
+    int m_curLen;
     double m_phase;
 };
 
@@ -39,9 +39,9 @@ void WavesetReplace_next(WavesetReplace* unit, int inNumSamples) {
     }
 
     int count = unit->m_count;
-    int slotIdx = unit->m_slotIdx;
-    int strongStart = unit->m_strongStart;
-    int strongLen = unit->m_strongLen;
+    int repIdx = unit->m_repIdx;
+    int loudStart = unit->m_loudStart;
+    int loudLen = unit->m_loudLen;
     int srcPos = unit->m_srcPos;
     int curLen = unit->m_curLen;
     double phase = unit->m_phase;
@@ -49,7 +49,7 @@ void WavesetReplace_next(WavesetReplace* unit, int inNumSamples) {
 
     for (int s = 0; s < inNumSamples; s++) {
         if (curLen <= 0) {
-            if (slotIdx >= count) {
+            if (repIdx >= count) {
                 int n = 0;
                 int pos = srcPos;
                 for (; n < cyclecnt; n++) {
@@ -67,36 +67,35 @@ void WavesetReplace_next(WavesetReplace* unit, int inNumSamples) {
                 count = n;
                 srcPos = pos;
                 int best = 0;
-                float bestPk = -1.f;
+                double bestL = -1.0;
                 for (int i = 0; i < n; i++) {
-                    float pk = waveset::peakAbs(bufData, unit->m_start[i], unit->m_len[i]);
-                    if (pk > bestPk) {
-                        bestPk = pk;
+                    double l = waveset::sumAbs(bufData, unit->m_start[i], unit->m_len[i]);
+                    if (l > bestL) {
+                        bestL = l;
                         best = i;
                     }
                 }
-                strongStart = unit->m_start[best];
-                strongLen = unit->m_len[best];
-                slotIdx = 0;
+                loudStart = unit->m_start[best];
+                loudLen = unit->m_len[best];
+                repIdx = 0;
             }
-            curLen = unit->m_len[slotIdx]; // slot keeps its original duration
+            curLen = loudLen;
             phase = 0.0;
         }
 
-        double p = phase / (double)curLen; // 0..1 across the slot
-        out[s] = waveset::readLin(bufData, frames, (double)strongStart + p * (double)strongLen);
+        out[s] = waveset::readLin(bufData, frames, (double)loudStart + phase);
 
         phase += rate;
         if (phase >= (double)curLen) {
-            slotIdx++;
+            repIdx++;
             curLen = 0;
         }
     }
 
     unit->m_count = count;
-    unit->m_slotIdx = slotIdx;
-    unit->m_strongStart = strongStart;
-    unit->m_strongLen = strongLen;
+    unit->m_repIdx = repIdx;
+    unit->m_loudStart = loudStart;
+    unit->m_loudLen = loudLen;
     unit->m_srcPos = srcPos;
     unit->m_curLen = curLen;
     unit->m_phase = phase;
@@ -109,9 +108,9 @@ void WavesetReplace_Ctor(WavesetReplace* unit) {
     int startPos = (int)ZIN0(3);
     unit->m_srcPos = (startPos < 0) ? 0 : startPos;
     unit->m_count = 0;
-    unit->m_slotIdx = 0; // 0 >= 0 => first block detects a group
-    unit->m_strongStart = 0;
-    unit->m_strongLen = 0;
+    unit->m_repIdx = 0; // 0 >= 0 => first block detects a group
+    unit->m_loudStart = 0;
+    unit->m_loudLen = 0;
     unit->m_curLen = 0;
     unit->m_phase = 0.0;
 

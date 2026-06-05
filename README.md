@@ -18,7 +18,7 @@ conventions; `rate` and `startPos` are SuperCollider extensions).
 - **`WavesetInterpolate`** (INTERPOLATE) — morphs between consecutive wavesets (`multiplier`× stretch).
 - **`WavesetOmit`** (OMIT) — silences `omit` of every `outOf` wavesets (timing preserved).
 - **`WavesetDelete`** (DELETE) — keeps one wavecycle per `cyclecnt` group by `mode`; compresses.
-- **`WavesetReverse`** (REVERSE) — reverses the order of wavecycles within groups of `cyclecnt`.
+- **`WavesetReverse`** (REVERSE) — plays each group of `cyclecnt` wavecycles backwards.
 - **`WavesetReplace`** (REPLACE) — the loudest wavecycle in each `cyclecnt` group replaces the rest.
 - **`WavesetShuffle`** (SHUFFLE) — reorders wavesets by a `domain`/`image` pattern (reorder/omit/duplicate).
 

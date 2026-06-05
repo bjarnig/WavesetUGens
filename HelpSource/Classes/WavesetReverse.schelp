@@ -5,10 +5,10 @@ related:: Classes/WavesetShuffle, Classes/WavesetDelete
 
 description::
 
-Port of CDP's waveset REVERSE. Walks a mono buffer and reverses the order of the
-wavecycles within each group of code::cyclecnt:: (e.g. 3-2-1, 6-5-4, ...). The
-wavecycles themselves are not played backwards — their sequence is reversed. The
-read pointer wraps at the end of the buffer.
+Port of CDP's waveset REVERSE. Walks a mono buffer and plays each group of
+code::cyclecnt:: wavecycles backwards (the samples of the whole group are
+reversed, giving the cycle order 3-2-1, 6-5-4, ...). The read pointer wraps at
+the end of the buffer.
 
 classmethods::
 
