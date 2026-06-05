@@ -4,7 +4,7 @@
 
 SuperCollider server plugins (UGens) that port the waveset processes of the
 [Composers Desktop Project](https://www.composersdesktop.com/) (CDP) to
-buffer-reading UGens, in the spirit of `GrainBuf`.
+buffer-reading UGens, in a similar format to `GrainBuf`.
 
 A waveset is a span of signal between zero crossings. The source sound lives in
 a Buffer rather than streaming, which lets the waveset processes emit sound more
@@ -12,7 +12,7 @@ fluently.
 
 ## UGens
 
-Faithful ports of CDP's waveset DISTORT processes (parameters follow CDP
+Ports of CDP's waveset DISTORT processes (parameters follow CDP
 conventions; `rate` and `startPos` are SuperCollider extensions).
 
 - **`WavesetRepeat`** (REPEAT) — replays each waveset `multiplier` times; time-stretches.
@@ -29,8 +29,6 @@ conventions; `rate` and `startPos` are SuperCollider extensions).
 - **`WavesetHarmonic`** (HARMONIC) — adds harmonics (`harmonics`/`amps`) over each cycle.
 - **`WavesetPitch`** (PITCH) — wandering random transposition per cycle (`octvary`, seedable).
 - **`WavesetDivide`** (DIVIDE) — divides wavecycle frequency by `divider`; dual of Multiply.
-
-This covers the full CDP waveset DISTORT family.
 
 ## Install (prebuilt)
 
@@ -62,5 +60,5 @@ source checkout matching the scsynth you run (see `build.sh`).
 ## Credits & license
 
 Ports of CDP waveset processes by Trevor Wishart and the Composers Desktop
-Project — an homage, not an official CDP product. Licensed under
+Project, not an official CDP product. Licensed under
 **GPL-3.0** (see [`LICENSE`](LICENSE)).
